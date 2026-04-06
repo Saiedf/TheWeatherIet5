@@ -8,10 +8,10 @@
 # correct package for Dreambox and open-source Enigma2 images.
 #
 # Telnet command:
-# wget -O - "https://raw.githubusercontent.com/Saiedf/TheWeatherIet5/main/VER%205.1/installer_theweatheriet5_5_2.sh" | /bin/sh
+# wget -O - "https://raw.githubusercontent.com/Saiedf/TheWeatherIet5/main/VER%205_2/installer_theweatheriet5_5_2.sh" | /bin/sh
 #
 # Alternative command (download then run):
-# wget -O /tmp/installer_theweatheriet5_5_2.sh "https://raw.githubusercontent.com/Saiedf/TheWeatherIet5/main/VER%205.1/installer_theweatheriet5_5_2.sh" && chmod 755 /tmp/installer_theweatheriet5_5_2.sh && /bin/sh /tmp/installer_theweatheriet5_5_2.sh
+# wget -O /tmp/installer_theweatheriet5_5_2.sh "https://raw.githubusercontent.com/Saiedf/TheWeatherIet5/main/VER%205_2/installer_theweatheriet5_5_2.sh" && chmod 755 /tmp/installer_theweatheriet5_5_2.sh && /bin/sh /tmp/installer_theweatheriet5_5_2.sh
 # ==========================================================
 
 ########################################################################################################################
@@ -36,8 +36,8 @@ REPO_BRANCH='main'
 
 # IMPORTANT:
 # Use URL encoding for spaces in GitHub raw paths.
-# Example: VER 5.1  =>  VER%205.1
-RELEASE_DIR='VER%205.1'
+# Example: VER 5_2  =>  VER%205_2
+RELEASE_DIR='VER%205_2'
 
 # Package folders inside the selected release directory.
 # Packages are stored in the same folder as this installer.
@@ -53,7 +53,7 @@ DEB_DM920_PY2=''
 DEB_DM920_PY3=''
 DEB_DREAMBOX_PY2=''
 DEB_DREAMBOX_PY3=''
-DEB_DREAMOS_DEFAULT='enigma2-plugin-extensions-theweatheriet5_5.1_all.deb'
+DEB_DREAMOS_DEFAULT='enigma2-plugin-extensions-theweatheriet5_5_2_all.deb'
 
 # --------------------------------------------------------------
 # VU+ / VTi (.ipk) packages
@@ -87,7 +87,7 @@ IPK_OPENSOURCE_DM920_PY2=''
 IPK_OPENSOURCE_DM920_PY3=''
 IPK_OPENSOURCE_PY2=''
 IPK_OPENSOURCE_PY3=''
-IPK_OPENSOURCE_DEFAULT='enigma2-plugin-extensions-theweatheriet5_5.1_all.ipk'
+IPK_OPENSOURCE_DEFAULT='enigma2-plugin-extensions-theweatheriet5_5_2_all.ipk'
 
 # --------------------------------------------------------------
 # Optional architecture-specific fallbacks (.ipk)
