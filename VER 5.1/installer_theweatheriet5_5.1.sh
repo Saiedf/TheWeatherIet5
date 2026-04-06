@@ -8,10 +8,10 @@
 # correct package for Dreambox and open-source Enigma2 images.
 #
 # Telnet command:
-# wget -O - "https://raw.githubusercontent.com/Saiedf/TheWeatherIet5/main/VER%205.1/installer_theweatheriet5_5_1.sh" | /bin/sh
+# wget -O - "https://raw.githubusercontent.com/Saiedf/TheWeatherIet5/main/VER%205.1/installer_theweatheriet5_5.1.sh" | /bin/sh
 #
 # Alternative command (download then run):
-# wget -O /tmp/installer_theweatheriet5_5_1.sh "https://raw.githubusercontent.com/Saiedf/TheWeatherIet5/main/VER%205.1/installer_theweatheriet5_5_1.sh" && chmod 755 /tmp/installer_theweatheriet5_5_1.sh && /bin/sh /tmp/installer_theweatheriet5_5_1.sh
+# wget -O /tmp/installer_theweatheriet5_5.1.sh "https://raw.githubusercontent.com/Saiedf/TheWeatherIet5/main/VER%205.1/installer_theweatheriet5_5.1.sh" && chmod 755 /tmp/installer_theweatheriet5_5.1.sh && /bin/sh /tmp/installer_theweatheriet5_5.1.sh
 # ==========================================================
 
 ########################################################################################################################
