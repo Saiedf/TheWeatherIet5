@@ -8,7 +8,7 @@
 # correct package for Dreambox and open-source Enigma2 images.
 #
 # Telnet command:
-# wget -O - "https://raw.githubusercontent.com/Saiedf/TheWeatherIet5/main/VER%205.1/installer_theweatheriet5_5.1.sh" | /bin/sh
+# wget -qO- "https://raw.githubusercontent.com/Saiedf/TheWeatherIet5/main/VER%205.1/installer_theweatheriet5_5.1.sh" | /bin/sh
 #
 # Alternative command (download then run):
 # wget -O /tmp/installer_theweatheriet5_5.1.sh "https://raw.githubusercontent.com/Saiedf/TheWeatherIet5/main/VER%205.1/installer_theweatheriet5_5.1.sh" && chmod 755 /tmp/installer_theweatheriet5_5.1.sh && /bin/sh /tmp/installer_theweatheriet5_5.1.sh
@@ -19,14 +19,18 @@
 ########################################################################################################################
 
 # Package name used to detect, remove and install the plugin.
+# Keep package name lowercase to match opkg/dpkg package metadata and file names.
 PACKAGE_NAME='enigma2-plugin-extensions-theweatheriet5'
+
+# Legacy/old package name fallback for older builds that used uppercase letters.
+LEGACY_PACKAGE_NAME='enigma2-plugin-extensions-TheWeatherIet5'
 
 # Display name used in messages only.
 PLUGIN_TITLE='TheWeatherIet5'
 
 # Plugin folder name inside Enigma2 plugin directories.
-# Example: /usr/lib/enigma2/python/Plugins/Extensions/TheWeatherIet5
-# Example: /usr/lib/enigma2/python/Plugins/SystemPlugins/TheWeatherIet5
+# Example: /usr/lib/enigma2/python/Plugins/Extensions/OAWeatheriet5
+# Example: /usr/lib/enigma2/python/Plugins/SystemPlugins/OAWeatheriet5
 PLUGIN_FOLDER='TheWeatherIet5'
 
 # GitHub repository settings.
@@ -36,7 +40,7 @@ REPO_BRANCH='main'
 
 # IMPORTANT:
 # Use URL encoding for spaces in GitHub raw paths.
-# Example: VER 5.1  =>  VER%205.1
+# Example: VER 1.5  =>  VER%201.5
 RELEASE_DIR='VER%205.1'
 
 # Package folders inside the selected release directory.
@@ -121,6 +125,18 @@ read_first_line() {
 		fi
 	done
 	return 1
+}
+
+read_user_input() {
+	# When the script is executed via:
+	# wget -qO- "url" | /bin/sh
+	# stdin is occupied by the script itself, so interactive reads must come from /dev/tty.
+	if [ -r /dev/tty ]; then
+		read ANSWER </dev/tty
+		return $?
+	fi
+	read ANSWER
+	return $?
 }
 
 detect_image_type() {
@@ -446,25 +462,43 @@ has_ipk_support() {
 	return 1
 }
 
-detect_installed_package() {
-	OLD_VERSION=''
-	OLD_MANAGER=''
+check_installed_package_name() {
+	CANDIDATE="$1"
+
+	if [ -z "$CANDIDATE" ]; then
+		return 1
+	fi
 
 	if have dpkg-query; then
-		OLD_VERSION=$(dpkg-query -W -f='${Status} ${Version}\n' "$PACKAGE_NAME" 2>/dev/null | awk '/install ok installed/ {print $4}')
-		if [ -n "$OLD_VERSION" ]; then
+		FOUND_VERSION=$(dpkg-query -W -f='${Status} ${Version}\n' "$CANDIDATE" 2>/dev/null | awk '/install ok installed/ {print $4}')
+		if [ -n "$FOUND_VERSION" ]; then
+			OLD_VERSION="$FOUND_VERSION"
 			OLD_MANAGER='dpkg'
+			OLD_PACKAGE_NAME="$CANDIDATE"
 			return 0
 		fi
 	fi
 
 	if have opkg; then
-		OLD_VERSION=$(opkg list-installed 2>/dev/null | awk -F ' - ' -v p="$PACKAGE_NAME" '$1==p {print $2; exit}')
-		if [ -n "$OLD_VERSION" ]; then
+		FOUND_VERSION=$(opkg list-installed 2>/dev/null | awk -F ' - ' -v p="$CANDIDATE" '$1==p {print $2; exit}')
+		if [ -n "$FOUND_VERSION" ]; then
+			OLD_VERSION="$FOUND_VERSION"
 			OLD_MANAGER='opkg'
+			OLD_PACKAGE_NAME="$CANDIDATE"
 			return 0
 		fi
 	fi
+
+	return 1
+}
+
+detect_installed_package() {
+	OLD_VERSION=''
+	OLD_MANAGER=''
+	OLD_PACKAGE_NAME=''
+
+	check_installed_package_name "$PACKAGE_NAME" && return 0
+	check_installed_package_name "$LEGACY_PACKAGE_NAME" && return 0
 
 	return 1
 }
@@ -491,22 +525,26 @@ find_old_plugin_paths() {
 
 remove_installed_package() {
 	REMOVED_BY_MANAGER=0
+	PACKAGE_TO_REMOVE=''
 
 	if [ -z "$OLD_VERSION" ]; then
 		return 0
 	fi
 
+	PACKAGE_TO_REMOVE="$OLD_PACKAGE_NAME"
+	[ -z "$PACKAGE_TO_REMOVE" ] && PACKAGE_TO_REMOVE="$PACKAGE_NAME"
+
 	if [ "$OLD_MANAGER" = 'dpkg' ] && have dpkg; then
-		dpkg -r "$PACKAGE_NAME"
+		dpkg -r "$PACKAGE_TO_REMOVE"
 		REMOVED_BY_MANAGER=$?
 	elif [ "$OLD_MANAGER" = 'opkg' ] && have opkg; then
-		opkg remove "$PACKAGE_NAME"
+		opkg remove "$PACKAGE_TO_REMOVE"
 		REMOVED_BY_MANAGER=$?
 	elif have dpkg; then
-		dpkg -r "$PACKAGE_NAME"
+		dpkg -r "$PACKAGE_TO_REMOVE"
 		REMOVED_BY_MANAGER=$?
 	elif have opkg; then
-		opkg remove "$PACKAGE_NAME"
+		opkg remove "$PACKAGE_TO_REMOVE"
 		REMOVED_BY_MANAGER=$?
 	else
 		REMOVED_BY_MANAGER=1
@@ -551,7 +589,11 @@ confirm_old_version_removal() {
 	say ''
 	say '============================================================='
 	say 'Old installed version or old plugin files detected.'
-	say "Package : $PACKAGE_NAME"
+	if [ -n "$OLD_PACKAGE_NAME" ]; then
+		say "Package : $OLD_PACKAGE_NAME"
+	else
+		say "Package : $PACKAGE_NAME"
+	fi
 	if [ -n "$OLD_VERSION" ]; then
 		say "Version : $OLD_VERSION"
 	else
@@ -567,7 +609,7 @@ confirm_old_version_removal() {
 
 	while true; do
 		printf 'Do you want to remove the old version and continue? [y/N]: '
-		read ANSWER
+		read_user_input || ANSWER=''
 		ANSWER=$(normalize_answer "$ANSWER")
 		case "$ANSWER" in
 			y|yes)
@@ -674,25 +716,28 @@ PKG_TYPE=''
 PKG_FILE=''
 PKG_SUBDIR=''
 
+DEB_CANDIDATE=$(pick_deb_file)
+IPK_CANDIDATE=$(pick_ipk_file)
+
 # DreamOS / Dreambox images prefer .deb packages.
 if [ "$IMAGE_TYPE" = 'dreamos' ] || [ "$DEVICE_FAMILY" = 'dreambox' ]; then
-	if has_deb_support && [ -n "$(pick_deb_file)" ]; then
+	if has_deb_support && [ -n "$DEB_CANDIDATE" ]; then
 		PKG_TYPE='deb'
-		PKG_FILE=$(pick_deb_file)
+		PKG_FILE="$DEB_CANDIDATE"
 		PKG_SUBDIR="$DEB_DIR"
-	elif has_ipk_support && [ -n "$(pick_ipk_file)" ]; then
+	elif has_ipk_support && [ -n "$IPK_CANDIDATE" ]; then
 		PKG_TYPE='ipk'
-		PKG_FILE=$(pick_ipk_file)
+		PKG_FILE="$IPK_CANDIDATE"
 		PKG_SUBDIR="$IPK_DIR"
 	fi
 else
-	if has_ipk_support && [ -n "$(pick_ipk_file)" ]; then
+	if has_ipk_support && [ -n "$IPK_CANDIDATE" ]; then
 		PKG_TYPE='ipk'
-		PKG_FILE=$(pick_ipk_file)
+		PKG_FILE="$IPK_CANDIDATE"
 		PKG_SUBDIR="$IPK_DIR"
-	elif has_deb_support && [ -n "$(pick_deb_file)" ]; then
+	elif has_deb_support && [ -n "$DEB_CANDIDATE" ]; then
 		PKG_TYPE='deb'
-		PKG_FILE=$(pick_deb_file)
+		PKG_FILE="$DEB_CANDIDATE"
 		PKG_SUBDIR="$DEB_DIR"
 	fi
 fi
