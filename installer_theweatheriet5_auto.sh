@@ -547,37 +547,21 @@ confirm_old_version_removal() {
     fi
     say '============================================================='
 
-    while true; do
-        printf 'Do you want to remove the old version and continue? [y/N]: '
-        read_user_input || ANSWER=''
-        ANSWER=$(trim "$ANSWER" | tr '[:upper:]' '[:lower:]')
-        case "$ANSWER" in
-            y|yes)
-                say ''
-                say 'Removing old version ...'
-                remove_installed_package
-                REMOVE_RET=$?
-                if [ $REMOVE_RET -ne 0 ]; then
-                    say 'Failed to remove the old package. Installation aborted.'
-                    exit 1
-                fi
-                remove_old_plugin_paths
-                REMOVE_PATH_RET=$?
-                if [ $REMOVE_PATH_RET -ne 0 ]; then
-                    say 'Failed to remove old plugin files. Installation aborted.'
-                    exit 1
-                fi
-                return 0
-                ;;
-            ''|n|no)
-                say 'Installation cancelled by user.'
-                exit 0
-                ;;
-            *)
-                say 'Please answer with y or n.'
-                ;;
-        esac
-    done
+    say ''
+    say 'Removing old version ...'
+    remove_installed_package
+    REMOVE_RET=$?
+    if [ $REMOVE_RET -ne 0 ]; then
+        say 'Failed to remove the old package. Installation aborted.'
+        exit 1
+    fi
+    remove_old_plugin_paths
+    REMOVE_PATH_RET=$?
+    if [ $REMOVE_PATH_RET -ne 0 ]; then
+        say 'Failed to remove old plugin files. Installation aborted.'
+        exit 1
+    fi
+    return 0
 }
 
 download_package() {
