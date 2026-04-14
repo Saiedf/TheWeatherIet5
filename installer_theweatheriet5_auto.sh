@@ -6,6 +6,7 @@
 # Notes    : This installer automatically reads the latest
 #            version from ver.txt and installs the matching
 #            package without editing this script each release.
+#            Old version removal is automatic with no prompt.
 # ==========================================================
 #
 # Example run:
@@ -86,15 +87,6 @@ read_first_line() {
     return 1
 }
 
-read_user_input() {
-    if [ -r /dev/tty ]; then
-        read ANSWER </dev/tty
-        return $?
-    fi
-    read ANSWER
-    return $?
-}
-
 download_to_stdout() {
     URL="$1"
 
@@ -117,22 +109,17 @@ fetch_version() {
     VERSION_RAW=$(trim "$VERSION_RAW")
 
     if [ -z "$VERSION_RAW" ]; then
-        say ''
-        say 'Failed to read version from ver.txt'
-        say "URL: $VERSION_URL"
-        exit 1
+        return 1
     fi
 
     case "$VERSION_RAW" in
         *[!0-9.]*)
-            say ''
-            say 'Version file contains invalid characters.'
-            say "Value: $VERSION_RAW"
-            exit 1
+            return 1
             ;;
     esac
 
-    echo "$VERSION_RAW"
+    printf '%s' "$VERSION_RAW"
+    return 0
 }
 
 detect_image_type() {
@@ -546,21 +533,22 @@ confirm_old_version_removal() {
         done
     fi
     say '============================================================='
+    say 'Removing old version automatically ...'
 
-    say ''
-    say 'Removing old version ...'
     remove_installed_package
     REMOVE_RET=$?
     if [ $REMOVE_RET -ne 0 ]; then
         say 'Failed to remove the old package. Installation aborted.'
         exit 1
     fi
+
     remove_old_plugin_paths
     REMOVE_PATH_RET=$?
     if [ $REMOVE_PATH_RET -ne 0 ]; then
         say 'Failed to remove old plugin files. Installation aborted.'
         exit 1
     fi
+
     return 0
 }
 
@@ -635,6 +623,12 @@ PYTHON_SERIES=$(detect_python_series)
 PYTHON_VERSION=$(detect_python_version)
 
 PLUGIN_VERSION=$(fetch_version)
+if [ $? -ne 0 ] || [ -z "$PLUGIN_VERSION" ]; then
+    say ''
+    say 'Failed to read version from ver.txt'
+    say "URL: https://raw.githubusercontent.com/$REPO_USER/$REPO_NAME/$REPO_BRANCH/$VERSION_FILE_PATH"
+    exit 1
+fi
 
 [ -z "$IPK_VTI_DEFAULT" ] && IPK_VTI_DEFAULT="$(default_ipk_file)"
 [ -z "$IPK_OPENATV_DEFAULT" ] && IPK_OPENATV_DEFAULT="$(default_ipk_file)"
@@ -646,7 +640,7 @@ PKG_FILE=''
 DEB_CANDIDATE=$(pick_deb_file)
 IPK_CANDIDATE=$(pick_ipk_file)
 
-if [ "$IMAGE_TYPE" = 'dreamos' ] || [ "$DEVICE_FAMILY" = 'dreambox' ]; then
+if [ "$IMAGE_TYPE" = 'dreamos' ]; then
     if has_deb_support && [ -n "$DEB_CANDIDATE" ]; then
         PKG_TYPE='deb'
         PKG_FILE="$DEB_CANDIDATE"
