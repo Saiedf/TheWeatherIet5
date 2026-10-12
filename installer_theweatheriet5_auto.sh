@@ -12,13 +12,15 @@
 # ==========================================================
 #
 # Example run:
-# wget -qO- "https://raw.githubusercontent.com/Saiedf/TheWeatherIet5/main/installer_theweatheriet5_auto.sh" | /bin/sh
+# wget -qO- "https://raw.githubusercontent.com/Saiedf/TheWeatherIet5/main/installer_theweatheriet5_auto.sh?nocache=$(date +%s)" | /bin/sh
 #
 # Alternative:
-# wget -O /tmp/installer_theweatheriet5_auto.sh "https://raw.githubusercontent.com/Saiedf/TheWeatherIet5/main/installer_theweatheriet5_auto.sh" && chmod 755 /tmp/installer_theweatheriet5_auto.sh && /bin/sh /tmp/installer_theweatheriet5_auto.sh
+# wget -O /tmp/installer_theweatheriet5_auto.sh "https://raw.githubusercontent.com/Saiedf/TheWeatherIet5/main/installer_theweatheriet5_auto.sh?nocache=$(date +%s)" && chmod 755 /tmp/installer_theweatheriet5_auto.sh && /bin/sh /tmp/installer_theweatheriet5_auto.sh
 # ==========================================================
 
 PACKAGE_NAME='enigma2-plugin-extensions-theweatheriet5'
+# Keep every previously used package name here, separated by spaces.
+# When PACKAGE_NAME changes in a future release, retain its old value here.
 LEGACY_PACKAGE_NAME='enigma2-plugin-extensions-TheWeatherIet5'
 PLUGIN_TITLE='TheWeatherIet5'
 PLUGIN_FOLDER='TheWeatherIet5'
@@ -106,7 +108,7 @@ download_to_stdout() {
 }
 
 fetch_version() {
-    VERSION_URL="https://raw.githubusercontent.com/$REPO_USER/$REPO_NAME/$REPO_BRANCH/$VERSION_FILE_PATH"
+    VERSION_URL="https://raw.githubusercontent.com/$REPO_USER/$REPO_NAME/$REPO_BRANCH/$VERSION_FILE_PATH?nocache=$(date +%s)"
     VERSION_RAW=$(download_to_stdout "$VERSION_URL" 2>/dev/null | sed -n '1p')
     VERSION_RAW=$(trim "$VERSION_RAW")
 
@@ -383,7 +385,7 @@ pick_ipk_file() {
 
 build_url() {
     BASE_URL="https://raw.githubusercontent.com/$REPO_USER/$REPO_NAME/$REPO_BRANCH/$RELEASES_DIR"
-    PKG_URL="$BASE_URL/$PKG_FILE"
+    PKG_URL="$BASE_URL/$PKG_FILE?nocache=$(date +%s)"
 }
 
 has_deb_support() {
@@ -431,9 +433,14 @@ detect_installed_package() {
     OLD_VERSION=''
     OLD_MANAGER=''
     OLD_PACKAGE_NAME=''
+    LEGACY_NAME=''
 
     check_installed_package_name "$PACKAGE_NAME" && return 0
-    check_installed_package_name "$LEGACY_PACKAGE_NAME" && return 0
+
+    for LEGACY_NAME in $LEGACY_PACKAGE_NAMES; do
+        [ "$LEGACY_NAME" = "$PACKAGE_NAME" ] && continue
+        check_installed_package_name "$LEGACY_NAME" && return 0
+    done
 
     return 1
 }
@@ -663,7 +670,7 @@ PLUGIN_VERSION=$(fetch_version)
 if [ $? -ne 0 ] || [ -z "$PLUGIN_VERSION" ]; then
     say ''
     say 'Failed to read version from ver.txt'
-    say "URL: https://raw.githubusercontent.com/$REPO_USER/$REPO_NAME/$REPO_BRANCH/$VERSION_FILE_PATH"
+    say "URL: $VERSION_URL"
     exit 1
 fi
 
